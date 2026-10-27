@@ -1,0 +1,853 @@
+<title>Stima Smart</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: a printed electricity statement (left) beside the household's records (right); stacks on phones */
+:root {
+  --bg: #e9ecf0;
+  --paper: #fbfbf9;
+  --ink: #1b2433;
+  --muted: #5d6676;
+  --rule: #c9ced6;
+  --rule-soft: #e1e4e9;
+  --accent: #a75d00;
+  --lcd: #20293a;
+  --lcd-ink: #f3bd5a;
+  --good: #1d6b45;
+  --warn: #a8321f;
+  --font-display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --font-body: "Source Sans 3", "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151c; --paper: #181e28; --ink: #e6e9ee; --muted: #9aa3b2; --rule: #343d4c; --rule-soft: #262e3b;
+    --accent: #eaa449; --lcd: #0b0f16; --lcd-ink: #f3bd5a; --good: #63c08f; --warn: #ef8a76; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151c; --paper: #181e28; --ink: #e6e9ee; --muted: #9aa3b2; --rule: #343d4c; --rule-soft: #262e3b;
+  --accent: #eaa449; --lcd: #0b0f16; --lcd-ink: #f3bd5a; --good: #63c08f; --warn: #ef8a76; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.5; }
+.page { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 48px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; letter-spacing: 0.01em; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* Masthead */
+.masthead { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 24px; padding-block: 22px 14px; border-bottom: 2px solid var(--ink); }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand svg { width: 30px; height: 30px; flex: none; }
+.brand h1 { font-size: 1.9rem; font-weight: 700; text-transform: uppercase; line-height: 1; }
+.brand p { font-size: 0.85rem; color: var(--muted); }
+.storage { font-size: 0.85rem; color: var(--muted); }
+.storage b { font-weight: 600; color: var(--ink); }
+
+.notice { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding-block: 10px; border-bottom: 1px solid var(--rule); font-size: 0.92rem; }
+.notice strong { color: var(--accent); }
+
+.layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 32px; padding-top: 24px; align-items: start; }
+@media (max-width: 880px) { .layout { grid-template-columns: minmax(0, 1fr); gap: 28px; } }
+
+/* Statement */
+.statement { background: var(--paper); border: 1px solid var(--rule); padding: 22px 22px 18px; display: grid; gap: 22px; }
+.st-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 16px; align-items: start; }
+.st-head h2 { font-size: 1.45rem; text-transform: uppercase; }
+.st-meta { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 14px; font-size: 0.88rem; grid-column: 1 / -1; }
+.st-meta dt { color: var(--muted); }
+.st-meta dd { margin: 0; font-family: var(--font-mono); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+.figures { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr); border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); }
+.fig { padding: 12px 14px; display: grid; gap: 2px; align-content: start; min-width: 0; border-left: 1px solid var(--rule); }
+.fig:first-child { border-left: 0; background: var(--lcd); color: #dfe4ec; }
+.fig .k { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.fig:first-child .k { color: #a2abbb; }
+.fig .v { font-family: var(--font-mono); font-size: 1.35rem; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.fig:first-child .v { font-size: 1.9rem; color: var(--lcd-ink); }
+.fig .n { font-size: 0.8rem; color: var(--muted); }
+.fig:first-child .n { color: #a2abbb; }
+@media (max-width: 560px) {
+  .figures { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .fig:first-child { grid-column: 1 / -1; }
+  .fig:nth-child(2) { border-left: 0; }
+  .fig:nth-child(n+2) { border-top: 1px solid var(--rule); }
+}
+
+.block-title { font-family: var(--font-display); font-size: 1.05rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; padding-bottom: 6px; border-bottom: 1px solid var(--ink); }
+.table-wrap { overflow-x: auto; }
+table.ledger { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.ledger th { text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-weight: 600; padding: 8px 6px 6px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+.ledger td { padding: 8px 6px; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+.ledger th.r, .ledger td.r { text-align: right; }
+.ledger td.r { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ledger .item { font-weight: 600; }
+.ledger .use { display: block; font-size: 0.8rem; color: var(--muted); font-weight: 400; }
+.share { display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end; }
+.share i { display: inline-block; width: 44px; height: 6px; background: var(--rule-soft); position: relative; }
+.share i b { position: absolute; inset: 0 auto 0 0; background: var(--accent); }
+.ledger tr.sub td { border-top: 1px solid var(--rule); border-bottom: 0; color: var(--muted); }
+.ledger tr.gap td { color: var(--warn); }
+.ledger tr.total td { border-top: 3px double var(--ink); border-bottom: 0; font-weight: 700; }
+.ledger tr.total td.r { font-weight: 600; }
+.ledger td.empty { color: var(--muted); padding: 14px 6px; }
+.verdict { font-size: 0.92rem; padding-left: 10px; border-left: 3px solid var(--accent); }
+
+ol.recs { margin: 0; padding: 0; list-style: none; counter-reset: rec; display: grid; }
+ol.recs li { counter-increment: rec; display: grid; grid-template-columns: 1.8em minmax(0, 1fr) auto; gap: 2px 10px; padding: 10px 0; border-bottom: 1px solid var(--rule-soft); }
+ol.recs li::before { content: counter(rec) "."; font-family: var(--font-mono); color: var(--muted); }
+ol.recs li strong { font-weight: 600; }
+ol.recs li .save { font-family: var(--font-mono); font-weight: 600; color: var(--good); white-space: nowrap; font-variant-numeric: tabular-nums; }
+ol.recs li p { grid-column: 2 / -1; color: var(--muted); font-size: 0.9rem; }
+ol.recs li.none { grid-template-columns: minmax(0, 1fr); color: var(--muted); }
+ol.recs li.none::before { content: none; }
+
+details.method { font-size: 0.9rem; border-top: 1px solid var(--rule); padding-top: 10px; }
+details.method summary { cursor: pointer; font-weight: 600; }
+details.method ul { margin: 8px 0 0; padding-left: 1.2em; display: grid; gap: 6px; color: var(--muted); }
+
+/* Records */
+.records { display: grid; gap: 14px; }
+.records > h2 { font-size: 1.45rem; text-transform: uppercase; }
+.tabs { display: flex; border-bottom: 1px solid var(--ink); overflow-x: auto; }
+.tab { font: 600 0.92rem var(--font-body); color: var(--muted); background: none; border: 0; border-bottom: 3px solid transparent; margin-bottom: -1px; padding: 8px 12px; cursor: pointer; white-space: nowrap; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.panel { display: grid; gap: 16px; }
+form.entry { display: grid; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid var(--rule); }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 10px; }
+.fields .wide { grid-column: 1 / -1; }
+label { display: grid; gap: 4px; font-size: 0.8rem; font-weight: 600; color: var(--muted); min-width: 0; }
+input, select, textarea { font: 400 1rem var(--font-body); color: var(--ink); background: var(--paper); border: 1px solid var(--rule); border-radius: 3px; padding: 7px 9px; width: 100%; box-sizing: border-box; min-width: 0; }
+input[type="number"] { font-family: var(--font-mono); font-size: 0.95rem; }
+textarea { resize: vertical; min-height: 60px; font-family: var(--font-mono); font-size: 0.85rem; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hint { font-size: 0.84rem; color: var(--muted); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.btn { font: 600 0.92rem var(--font-body); border-radius: 3px; padding: 8px 14px; cursor: pointer; border: 1px solid var(--ink); background: var(--ink); color: var(--paper); }
+.btn.ghost { background: transparent; color: var(--ink); }
+.btn.danger { background: transparent; color: var(--warn); border-color: var(--warn); }
+.link { font: 600 0.85rem var(--font-body); background: none; border: 0; padding: 2px 0; color: var(--muted); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.link:hover { color: var(--warn); }
+.msg { font-size: 0.88rem; color: var(--good); }
+.msg.err { color: var(--warn); }
+.rows { display: grid; }
+.ap-row { display: grid; grid-template-columns: minmax(0, 2fr) repeat(4, minmax(0, 1fr)); gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--rule-soft); align-items: end; }
+.ap-row .foot { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 12px; font-size: 0.84rem; color: var(--muted); }
+@media (max-width: 560px) { .ap-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ap-row .ap-name { grid-column: 1 / -1; } }
+.entry-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--rule-soft); }
+.entry-row .mono { font-size: 0.88rem; overflow-wrap: anywhere; min-width: 0; }
+.none { color: var(--muted); font-size: 0.92rem; padding: 8px 0; }
+.danger-zone { display: grid; gap: 8px; padding-top: 4px; }
+
+footer { margin-top: 36px; padding-top: 12px; border-top: 1px solid var(--rule); font-size: 0.82rem; color: var(--muted); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <rect x="2" y="2" width="28" height="28" rx="3" fill="var(--ink)"/>
+        <rect x="6" y="6" width="20" height="8" fill="var(--lcd-ink)"/>
+        <path d="M17 16 11 24h4l-1 5 6-8h-4l1-5z" fill="var(--paper)"/>
+      </svg>
+      <div>
+        <h1>Stima Smart</h1>
+        <p>Household electricity audit</p>
+      </div>
+    </div>
+    <p class="storage" id="storage">Records saved <b>on this device</b></p>
+  </header>
+
+  <div class="notice" id="example-notice" hidden>
+    <p><strong>Example household.</strong> These are sample figures to show how the audit reads.</p>
+    <button class="btn" id="start-own" type="button">Start my own audit</button>
+  </div>
+
+  <div class="layout">
+    <article class="statement" aria-labelledby="st-title">
+      <div class="st-head">
+        <h2 id="st-title">Energy statement</h2>
+        <span class="mono muted" id="st-date"></span>
+        <dl class="st-meta">
+          <dt>Meter</dt><dd id="m-meter">–</dd>
+          <dt>Period</dt><dd id="m-period">–</dd>
+          <dt>Cost per unit</dt><dd id="m-rate">–</dd>
+        </dl>
+      </div>
+
+      <div class="figures" aria-live="polite">
+        <div class="fig"><span class="k">Monthly cost</span><span class="v" id="f-month">–</span><span class="n" id="f-month-n"></span></div>
+        <div class="fig"><span class="k">Daily use</span><span class="v" id="f-daily">–</span><span class="n" id="f-daily-n"></span></div>
+        <div class="fig"><span class="k">Units run out</span><span class="v" id="f-runout">–</span><span class="n" id="f-runout-n"></span></div>
+      </div>
+
+      <section aria-labelledby="ledger-t">
+        <h3 class="block-title" id="ledger-t">Itemised use, 30 days</h3>
+        <div class="table-wrap">
+          <table class="ledger">
+            <thead><tr><th scope="col">Appliance</th><th scope="col" class="r">kWh</th><th scope="col" class="r">Share</th><th scope="col" class="r">KES</th></tr></thead>
+            <tbody id="ledger"></tbody>
+          </table>
+        </div>
+      </section>
+      <p class="verdict" id="verdict" hidden></p>
+
+      <section aria-labelledby="recs-t">
+        <h3 class="block-title" id="recs-t">Recommended changes</h3>
+        <ol class="recs" id="recs"></ol>
+      </section>
+
+      <details class="method">
+        <summary>How these figures are worked out</summary>
+        <ul>
+          <li><b>Cost per unit</b> is the total paid for tokens divided by the units received, so it already includes levies and taxes.</li>
+          <li><b>Daily use</b> comes from your meter readings. On a prepaid meter: units left at the first reading, plus tokens loaded since, minus units left at the last reading, divided by the days between.</li>
+          <li><b>Appliance use</b> is an estimate: watts × number × hours per day × days per week ÷ 7 ÷ 1,000.</li>
+          <li><b>Not explained by your list</b> is the difference between what the meter measured and what your appliance list adds up to.</li>
+          <li><b>Savings</b> assume typical reductions for each habit change, priced at your own cost per unit.</li>
+        </ul>
+      </details>
+    </article>
+
+    <section class="records" aria-labelledby="rec-title">
+      <h2 id="rec-title">Your records</h2>
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" id="tab-appliances" aria-controls="panel-appliances" aria-selected="true" type="button">Appliances</button>
+        <button class="tab" role="tab" id="tab-tokens" aria-controls="panel-tokens" aria-selected="false" type="button">Tokens</button>
+        <button class="tab" role="tab" id="tab-readings" aria-controls="panel-readings" aria-selected="false" type="button">Meter readings</button>
+        <button class="tab" role="tab" id="tab-settings" aria-controls="panel-settings" aria-selected="false" type="button">Settings</button>
+      </div>
+
+      <div class="panel" id="panel-appliances" role="tabpanel" aria-labelledby="tab-appliances">
+        <form class="entry" id="ap-form">
+          <div class="fields">
+            <label for="ap-preset" class="wide">Common appliance
+              <select id="ap-preset"></select>
+            </label>
+            <label for="ap-name" class="wide">Name
+              <input id="ap-name" required maxlength="40" placeholder="Instant shower">
+            </label>
+            <label for="ap-watts">Watts
+              <input id="ap-watts" type="number" min="1" max="20000" step="1" required>
+            </label>
+            <label for="ap-qty">How many
+              <input id="ap-qty" type="number" min="1" max="50" step="1" value="1" required>
+            </label>
+            <label for="ap-hours">Hours a day
+              <input id="ap-hours" type="number" min="0" max="24" step="0.05" required>
+            </label>
+            <label for="ap-days">Days a week
+              <input id="ap-days" type="number" min="1" max="7" step="1" value="7" required>
+            </label>
+          </div>
+          <p class="hint">Wattage is on the label (W or kW). 15 minutes = 0.25 hours.</p>
+          <div class="actions"><button class="btn" type="submit">Add appliance</button><span class="msg" id="ap-msg" role="status"></span></div>
+        </form>
+        <div class="rows" id="ap-list"></div>
+      </div>
+
+      <div class="panel" id="panel-tokens" role="tabpanel" aria-labelledby="tab-tokens" hidden>
+        <form class="entry" id="tk-form">
+          <label for="tk-sms">Paste a KPLC token SMS (optional)
+            <textarea id="tk-sms" placeholder="Paste the token message, then press Read SMS"></textarea>
+          </label>
+          <div class="actions"><button class="btn ghost" type="button" id="tk-read">Read SMS</button></div>
+          <div class="fields">
+            <label for="tk-date">Date
+              <input id="tk-date" type="date" required>
+            </label>
+            <label for="tk-amount">Paid (KES)
+              <input id="tk-amount" type="number" min="1" step="0.01" required>
+            </label>
+            <label for="tk-units">Units (kWh)
+              <input id="tk-units" type="number" min="0.01" step="0.01" required>
+            </label>
+          </div>
+          <div class="actions"><button class="btn" type="submit">Add purchase</button><span class="msg" id="tk-msg" role="status"></span></div>
+        </form>
+        <div class="rows" id="tk-list"></div>
+      </div>
+
+      <div class="panel" id="panel-readings" role="tabpanel" aria-labelledby="tab-readings" hidden>
+        <form class="entry" id="rd-form">
+          <div class="fields">
+            <label for="rd-date">Date
+              <input id="rd-date" type="date" required>
+            </label>
+            <label for="rd-value"><span id="rd-label">Units left on meter</span>
+              <input id="rd-value" type="number" min="0" step="0.01" required>
+            </label>
+          </div>
+          <p class="hint" id="rd-hint"></p>
+          <div class="actions"><button class="btn" type="submit">Add reading</button><span class="msg" id="rd-msg" role="status"></span></div>
+        </form>
+        <div class="rows" id="rd-list"></div>
+      </div>
+
+      <div class="panel" id="panel-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
+        <label for="set-meter">Meter type
+          <select id="set-meter">
+            <option value="prepaid">Prepaid (token) meter: shows units left</option>
+            <option value="postpaid">Postpaid meter: shows total units used</option>
+          </select>
+        </label>
+        <div class="danger-zone">
+          <p><b>Clear all records</b></p>
+          <p class="hint">Removes every appliance, token purchase and meter reading. This cannot be undone.</p>
+          <div class="actions" id="clear-row"><button class="btn danger" type="button" id="clear-btn">Clear all records</button></div>
+          <div class="actions" id="clear-confirm" hidden>
+            <span>Delete everything?</span>
+            <button class="btn danger" type="button" id="clear-yes">Yes, delete</button>
+            <button class="btn ghost" type="button" id="clear-no">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <span>Stima Smart · prototype v0.2</span>
+    <span>Appliance figures are estimates. Meter readings and token purchases are measured.</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var LS_KEY = "stima-smart-v1";
+  var DAYS_PER_MONTH = 30;
+
+  var PRESETS = [
+    ["Instant shower", 4500], ["Electric water heater (geyser)", 3000], ["Electric kettle", 2000],
+    ["Electric iron", 1200], ["Fridge", 150], ["Deep freezer", 200], ["Electric cooker plate", 1500],
+    ["Microwave", 1000], ["Television", 80], ["Decoder", 15], ["WiFi router", 10],
+    ["LED bulb", 9], ["Old filament bulb", 60], ["Phone charger", 10], ["Laptop", 60],
+    ["Desktop computer", 200], ["Washing machine", 500], ["Blender", 400], ["Hair dryer", 1500],
+    ["Water pump", 750], ["Standing fan", 50]
+  ];
+
+  var TIP_RULES = [
+    { match: /shower|geyser|water heater/i, share: 0.25, title: "Shorten hot water use",
+      text: "Cut shower or heater time by a quarter, about 2 minutes per shower. Switch the geyser off when nobody needs hot water." },
+    { match: /kettle/i, share: 0.3, title: "Boil only the water you need",
+      text: "Fill the kettle for the cups you will drink, not to the top." },
+    { match: /iron/i, share: 0.3, title: "Iron in one weekly batch",
+      text: "The iron burns power every time it heats up. One session a week avoids repeated warm-ups." },
+    { match: /fridge|freezer/i, share: 0.15, title: "Help the fridge work less",
+      text: "Check the door seal holds a sheet of paper, keep it a hand's width from the wall and away from the cooker, and let food cool before it goes in." },
+    { match: /cooker|plate|oven/i, share: 0.2, title: "Cook with lids and matching plates",
+      text: "A covered pot on a plate of the same size needs about a fifth less power." },
+    { match: /filament|incandescent/i, share: 0.85, title: "Switch to LED bulbs",
+      text: "A 9 W LED gives the same light as a 60 W filament bulb and lasts years longer." },
+    { match: /tv|television|decoder|router|computer|laptop|charger/i, share: 0.1, title: "Switch off at the socket at night",
+      text: "Electronics on standby draw power all night." },
+    { match: /pump/i, share: 0.2, title: "Run the pump once a day",
+      text: "Fill the tank in one run instead of switching the pump on many times." }
+  ];
+
+  var state = null;
+  var cloudRef = null;
+  var cloudBusy = false;
+  var cloudPending = false;
+  var cloudTimer = null;
+
+  function uid() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); }
+  function todayISO() {
+    var d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function parseDay(iso) { var p = String(iso).split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function daysBetween(a, b) { return Math.round((parseDay(b) - parseDay(a)) / 86400000); }
+  function fmtDate(iso) {
+    try { return parseDay(iso).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" }); }
+    catch (e) { return iso; }
+  }
+  function fmtKES(v) { return "KES " + Math.round(v).toLocaleString("en-KE"); }
+  function fmtInt(v) { return Math.round(v).toLocaleString("en-KE"); }
+  function fmtNum(v, dp) { return Number(v).toLocaleString("en-KE", { minimumFractionDigits: dp, maximumFractionDigits: dp }); }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function num(v, min, max) { var n = Number(v); if (v === "" || !isFinite(n)) return null; return Math.min(max, Math.max(min, n)); }
+  function fmtUse(a) {
+    var t = a.hours < 1 ? Math.round(a.hours * 60) + " min" : fmtNum(a.hours, a.hours % 1 ? 1 : 0) + " h";
+    return fmtInt(a.watts) + " W · " + t + "/day" + (a.days < 7 ? " · " + a.days + " days/wk" : "");
+  }
+
+  function exampleState() {
+    return {
+      version: 1, isExample: true, meterType: "prepaid",
+      appliances: [
+        { id: uid(), name: "Instant shower", watts: 4500, qty: 1, hours: 0.5, days: 7 },
+        { id: uid(), name: "Fridge", watts: 150, qty: 1, hours: 10, days: 7 },
+        { id: uid(), name: "Electric kettle", watts: 2000, qty: 1, hours: 0.25, days: 7 },
+        { id: uid(), name: "Decoder and WiFi router", watts: 25, qty: 1, hours: 24, days: 7 },
+        { id: uid(), name: "Television", watts: 80, qty: 1, hours: 5, days: 7 },
+        { id: uid(), name: "Electric iron", watts: 1200, qty: 1, hours: 1, days: 2 },
+        { id: uid(), name: "LED bulb", watts: 9, qty: 6, hours: 5, days: 7 },
+        { id: uid(), name: "Phone charger", watts: 10, qty: 3, hours: 3, days: 7 }
+      ],
+      tokens: [
+        { id: uid(), date: "2026-10-01", amount: 1500, units: 51.7 },
+        { id: uid(), date: "2026-10-10", amount: 1500, units: 51.7 },
+        { id: uid(), date: "2026-10-19", amount: 1500, units: 51.7 }
+      ],
+      readings: [
+        { id: uid(), date: "2026-10-01", value: 58.0 },
+        { id: uid(), date: "2026-10-08", value: 13.2 },
+        { id: uid(), date: "2026-10-15", value: 20.1 },
+        { id: uid(), date: "2026-10-22", value: 27.0 }
+      ]
+    };
+  }
+  function emptyState() { return { version: 1, isExample: false, meterType: "prepaid", appliances: [], tokens: [], readings: [] }; }
+
+  function normalize(raw) {
+    var s = emptyState();
+    if (!raw || typeof raw !== "object") return s;
+    s.isExample = raw.isExample === true;
+    s.meterType = raw.meterType === "postpaid" ? "postpaid" : "prepaid";
+    (Array.isArray(raw.appliances) ? raw.appliances : []).forEach(function (a) {
+      var w = num(a.watts, 1, 20000), q = num(a.qty, 1, 50), h = num(a.hours, 0, 24), d = num(a.days, 1, 7);
+      if (w === null || q === null || h === null || d === null || !a.name) return;
+      s.appliances.push({ id: String(a.id || uid()), name: String(a.name).slice(0, 40), watts: w, qty: q, hours: h, days: d });
+    });
+    (Array.isArray(raw.tokens) ? raw.tokens : []).forEach(function (t) {
+      var am = num(t.amount, 0.01, 1e7), u = num(t.units, 0.01, 1e6);
+      if (am === null || u === null || !/^\d{4}-\d{2}-\d{2}$/.test(t.date)) return;
+      s.tokens.push({ id: String(t.id || uid()), date: t.date, amount: am, units: u });
+    });
+    (Array.isArray(raw.readings) ? raw.readings : []).forEach(function (r) {
+      var v = num(r.value, 0, 1e8);
+      if (v === null || !/^\d{4}-\d{2}-\d{2}$/.test(r.date)) return;
+      s.readings.push({ id: String(r.id || uid()), date: r.date, value: v });
+    });
+    return s;
+  }
+
+  /* ---------- storage ---------- */
+  function loadLocal() { try { var s = localStorage.getItem(LS_KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
+  function saveLocal(s) { try { localStorage.setItem(LS_KEY, JSON.stringify(s)); return true; } catch (e) { return false; } }
+  function setStorage(mode) {
+    var p = document.getElementById("storage");
+    p.replaceChildren(document.createTextNode("Records saved "), Object.assign(document.createElement("b"), { textContent: mode === "cloud" ? "to your account" : "on this device" }));
+  }
+  function flushCloud() {
+    if (!cloudRef || state.isExample) return;
+    if (cloudBusy) { cloudPending = true; return; }
+    cloudBusy = true;
+    cloudRef.set(clone(state)).then(function () {
+      cloudBusy = false;
+      if (cloudPending) { cloudPending = false; flushCloud(); }
+    }, function () { cloudBusy = false; cloudPending = false; cloudRef = null; setStorage("local"); });
+  }
+  function persist() {
+    saveLocal(state);
+    if (cloudRef && !state.isExample) { clearTimeout(cloudTimer); cloudTimer = setTimeout(flushCloud, 600); }
+  }
+  function initCloud() {
+    if (!window.claude || typeof window.claude.use !== "function") return;
+    Promise.all([window.claude.use("user"), window.claude.use("db")]).then(function (caps) {
+      var user = caps[0], db = caps[1];
+      if (!user || !db) return null;
+      return user.id().then(function (id) {
+        if (!id) return null;
+        var ref = db.doc("data/users/" + id + "/household");
+        return ref.get().then(function (snap) {
+          if (snap.exists) {
+            state = normalize(clone(snap.data()));
+            saveLocal(state); cloudRef = ref; setStorage("cloud"); renderAll();
+            return null;
+          }
+          if (state.isExample) { cloudRef = ref; setStorage("cloud"); return null; }
+          return ref.set(clone(state)).then(function () { cloudRef = ref; setStorage("cloud"); });
+        });
+      });
+    }).catch(function () { cloudRef = null; setStorage("local"); });
+  }
+
+  /* ---------- calculations ---------- */
+  function sorted(arr) { return arr.slice().sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }); }
+  function costPerUnit() {
+    var amt = 0, units = 0;
+    state.tokens.forEach(function (t) { amt += t.amount; units += t.units; });
+    return units > 0 ? amt / units : null;
+  }
+  function measuredDaily() {
+    var rd = sorted(state.readings);
+    if (rd.length >= 2) {
+      var first = rd[0], last = rd[rd.length - 1];
+      var days = daysBetween(first.date, last.date);
+      if (days > 0) {
+        var used;
+        if (state.meterType === "postpaid") used = last.value - first.value;
+        else {
+          var added = 0;
+          state.tokens.forEach(function (t) { if (t.date > first.date && t.date <= last.date) added += t.units; });
+          used = first.value + added - last.value;
+        }
+        if (used >= 0) return { perDay: used / days, days: days, source: "readings", from: first.date, to: last.date };
+        return { perDay: null, days: days, source: "bad", from: first.date, to: last.date };
+      }
+    }
+    var tk = sorted(state.tokens);
+    if (tk.length >= 2) {
+      var span = daysBetween(tk[0].date, tk[tk.length - 1].date);
+      if (span > 0) {
+        var u = 0;
+        for (var i = 0; i < tk.length - 1; i++) u += tk[i].units;
+        return { perDay: u / span, days: span, source: "tokens", from: tk[0].date, to: tk[tk.length - 1].date };
+      }
+    }
+    return null;
+  }
+  function applianceDaily(a) { return a.watts * a.qty * a.hours * (a.days / 7) / 1000; }
+  function runout(perDay) {
+    if (state.meterType !== "prepaid" || !perDay || perDay <= 0) return null;
+    var rd = sorted(state.readings);
+    if (!rd.length) return null;
+    var last = rd[rd.length - 1];
+    var balance = last.value;
+    state.tokens.forEach(function (t) { if (t.date > last.date) balance += t.units; });
+    var daysLeft = balance / perDay;
+    var d = parseDay(last.date);
+    d.setDate(d.getDate() + Math.floor(daysLeft));
+    return { date: d, daysLeft: daysLeft, from: last.date };
+  }
+
+  /* ---------- rendering ---------- */
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+  function setText(id, t) { document.getElementById(id).textContent = t; }
+
+  function renderSummary(rate, m, estDaily) {
+    setText("st-date", fmtDate(todayISO()));
+    setText("m-meter", state.meterType === "prepaid" ? "Prepaid (tokens)" : "Postpaid");
+    setText("m-period", m ? fmtDate(m.from) + " – " + fmtDate(m.to) + " (" + m.days + " days)" : "Add two meter readings");
+    setText("m-rate", rate !== null ? "KES " + fmtNum(rate, 2) + " per kWh" : "Add a token purchase");
+
+    var daily = m && m.perDay !== null ? m.perDay : null;
+    if (daily !== null) {
+      setText("f-daily", fmtNum(daily, 1) + " kWh");
+      setText("f-daily-n", m.source === "readings" ? "measured by your meter" : "from token purchases");
+    } else {
+      setText("f-daily", "–");
+      setText("f-daily-n", m && m.source === "bad" ? "readings don't add up: check meter type or a missing token" : "needs two meter readings");
+    }
+    var basis = daily !== null ? daily : estDaily;
+    if (rate !== null && basis > 0) {
+      setText("f-month", fmtKES(basis * DAYS_PER_MONTH * rate));
+      setText("f-month-n", daily !== null ? "at your measured use" : "from your appliance list");
+    } else {
+      setText("f-month", "–");
+      setText("f-month-n", rate === null ? "needs a token purchase" : "needs appliances or readings");
+    }
+    var ro = runout(daily);
+    if (ro) {
+      if (ro.date < parseDay(todayISO())) {
+        setText("f-runout", "Used up");
+        setText("f-runout-n", "by your last reading on " + fmtDate(ro.from));
+      } else {
+        setText("f-runout", ro.date.toLocaleDateString("en-KE", { day: "numeric", month: "short" }));
+        setText("f-runout-n", "about " + fmtInt(ro.daysLeft) + " days after last reading");
+      }
+    } else {
+      setText("f-runout", "–");
+      setText("f-runout-n", state.meterType === "prepaid" ? "needs meter readings" : "prepaid meters only");
+    }
+  }
+
+  function ledgerRow(cls, name, sub, kwh, share, cost) {
+    var tr = el("tr", cls);
+    var td = el("td");
+    td.appendChild(el("span", "item", name));
+    if (sub) td.appendChild(el("span", "use", sub));
+    tr.appendChild(td);
+    tr.appendChild(el("td", "r", kwh));
+    var sh = el("td", "r");
+    if (share !== null) {
+      var wrap = el("span", "share");
+      var bar = el("i"); var fill = el("b"); fill.style.width = Math.min(100, share) + "%"; bar.appendChild(fill);
+      wrap.appendChild(bar); wrap.appendChild(document.createTextNode(Math.round(share) + "%"));
+      sh.appendChild(wrap);
+    }
+    tr.appendChild(sh);
+    tr.appendChild(el("td", "r", cost));
+    return tr;
+  }
+
+  function renderLedger(rate, m) {
+    var body = document.getElementById("ledger");
+    body.replaceChildren();
+    var rows = state.appliances.map(function (a) { return { a: a, kwh: applianceDaily(a) * DAYS_PER_MONTH }; })
+      .sort(function (x, y) { return y.kwh - x.kwh; });
+    var est = rows.reduce(function (s, r) { return s + r.kwh; }, 0);
+    var measured = m && m.perDay !== null ? m.perDay * DAYS_PER_MONTH : null;
+    var total = Math.max(est, measured || 0);
+    function kes(k) { return rate !== null ? fmtInt(k * rate) : "–"; }
+    if (!rows.length) {
+      var tr = el("tr"); var td = el("td", "empty", "Add your appliances to see where the money goes."); td.colSpan = 4; tr.appendChild(td); body.appendChild(tr);
+    }
+    rows.forEach(function (r) {
+      body.appendChild(ledgerRow("", r.a.name + (r.a.qty > 1 ? " × " + r.a.qty : ""), fmtUse(r.a),
+        fmtNum(r.kwh, 1), total > 0 ? (r.kwh / total) * 100 : 0, kes(r.kwh)));
+    });
+    if (rows.length && measured !== null) {
+      body.appendChild(ledgerRow("sub", "Appliances listed", "estimated", fmtNum(est, 1), null, kes(est)));
+      var gap = measured - est;
+      if (gap > 0.5) body.appendChild(ledgerRow("gap", "Not explained by your list", "", fmtNum(gap, 1), (gap / total) * 100, kes(gap)));
+      body.appendChild(ledgerRow("total", "Metered total", "", fmtNum(measured, 1), null, kes(measured)));
+    } else if (rows.length) {
+      body.appendChild(ledgerRow("total", "Estimated total", "add meter readings to check it", fmtNum(est, 1), null, kes(est)));
+    }
+    var v = document.getElementById("verdict");
+    if (measured && rows.length) {
+      var pct = Math.round((est / measured) * 100);
+      v.hidden = false;
+      if (pct < 80) v.textContent = "Your list explains " + pct + "% of what the meter measured. Something is missing or runs longer than you think: an appliance left on, an old fridge, or a water heater that never switches off.";
+      else if (pct > 120) v.textContent = "Your list adds up to " + pct + "% of what the meter measured. Some hours or wattages are set too high; adjust them until the two match.";
+      else v.textContent = "Your list explains " + pct + "% of what the meter measured, so this breakdown is close to reality.";
+    } else v.hidden = true;
+  }
+
+  function renderRecs(rate) {
+    var list = document.getElementById("recs");
+    list.replaceChildren();
+    var tips = [], byTitle = {};
+    state.appliances.forEach(function (a) {
+      var kwh = applianceDaily(a) * DAYS_PER_MONTH;
+      if (kwh <= 0) return;
+      for (var i = 0; i < TIP_RULES.length; i++) {
+        var rule = TIP_RULES[i];
+        if (rule.match.test(a.name)) {
+          if (byTitle[rule.title]) byTitle[rule.title].save += kwh * rule.share;
+          else { byTitle[rule.title] = { title: rule.title, text: rule.text, save: kwh * rule.share }; tips.push(byTitle[rule.title]); }
+          return;
+        }
+      }
+    });
+    var top = state.appliances.slice().sort(function (x, y) { return applianceDaily(y) - applianceDaily(x); })[0];
+    if (top && top.hours >= 1) {
+      tips.push({ title: "Use the " + top.name.toLowerCase() + " one hour less a day", text: "It is your largest user, so each hour off counts most.",
+        save: top.watts * top.qty * (top.days / 7) / 1000 * DAYS_PER_MONTH });
+    }
+    tips.sort(function (x, y) { return y.save - x.save; });
+    tips.slice(0, 5).forEach(function (t) {
+      var li = el("li");
+      li.appendChild(el("strong", "", t.title));
+      li.appendChild(el("span", "save", (rate !== null ? fmtKES(t.save * rate) : fmtNum(t.save, 1) + " kWh") + "/mo"));
+      li.appendChild(el("p", "", t.text));
+      list.appendChild(li);
+    });
+    if (!tips.length) list.appendChild(el("li", "none", "Recommendations appear once you add appliances."));
+  }
+
+  function renderAppliances(rate) {
+    var list = document.getElementById("ap-list");
+    list.replaceChildren();
+    if (!state.appliances.length) { list.appendChild(el("p", "none", "No appliances yet.")); return; }
+    state.appliances.forEach(function (a) {
+      var row = el("div", "ap-row");
+      function field(key, labelText, attrs) {
+        var lab = el("label", "", labelText);
+        var inp = document.createElement("input");
+        inp.id = "ap-" + a.id + "-" + key;
+        lab.htmlFor = inp.id;
+        Object.keys(attrs).forEach(function (k) { inp.setAttribute(k, attrs[k]); });
+        inp.value = a[key];
+        inp.addEventListener("change", function () {
+          var v;
+          if (key === "name") { v = inp.value.trim().slice(0, 40); if (!v) { inp.value = a.name; return; } }
+          else { v = num(inp.value, Number(attrs.min), Number(attrs.max)); if (v === null) { inp.value = a[key]; return; } }
+          state = Object.assign(clone(state), {
+            appliances: state.appliances.map(function (x) { if (x.id !== a.id) return x; var c = clone(x); c[key] = v; return c; })
+          });
+          commit();
+        });
+        lab.appendChild(inp);
+        return lab;
+      }
+      var nameLab = field("name", "Appliance", { maxlength: "40" }); nameLab.classList.add("ap-name");
+      row.appendChild(nameLab);
+      row.appendChild(field("watts", "Watts", { type: "number", min: "1", max: "20000", step: "1" }));
+      row.appendChild(field("qty", "How many", { type: "number", min: "1", max: "50", step: "1" }));
+      row.appendChild(field("hours", "Hours/day", { type: "number", min: "0", max: "24", step: "0.05" }));
+      row.appendChild(field("days", "Days/week", { type: "number", min: "1", max: "7", step: "1" }));
+      var foot = el("div", "foot");
+      var kwh = applianceDaily(a) * DAYS_PER_MONTH;
+      foot.appendChild(el("span", "mono", fmtNum(kwh, 1) + " kWh/month" + (rate !== null ? " · " + fmtKES(kwh * rate) : "")));
+      var del = el("button", "link", "Remove"); del.type = "button"; del.setAttribute("aria-label", "Remove " + a.name);
+      del.addEventListener("click", function () {
+        state = Object.assign(clone(state), { appliances: state.appliances.filter(function (x) { return x.id !== a.id; }) });
+        commit();
+      });
+      foot.appendChild(del);
+      row.appendChild(foot);
+      list.appendChild(row);
+    });
+  }
+
+  function renderEntries(listId, items, fmt, emptyText, key) {
+    var list = document.getElementById(listId);
+    list.replaceChildren();
+    if (!items.length) { list.appendChild(el("p", "none", emptyText)); return; }
+    sorted(items).reverse().forEach(function (it) {
+      var row = el("div", "entry-row");
+      row.appendChild(el("span", "mono", fmt(it)));
+      var del = el("button", "link", "Remove"); del.type = "button"; del.setAttribute("aria-label", "Remove entry from " + fmtDate(it.date));
+      del.addEventListener("click", function () {
+        var patch = {}; patch[key] = state[key].filter(function (x) { return x.id !== it.id; });
+        state = Object.assign(clone(state), patch); commit();
+      });
+      row.appendChild(del);
+      list.appendChild(row);
+    });
+  }
+
+  function renderReadingLabels() {
+    var pre = state.meterType === "prepaid";
+    setText("rd-label", pre ? "Units left on meter" : "Meter reading (total kWh)");
+    setText("rd-hint", pre
+      ? "Read the units left at about the same time each day, and record every token you load under Tokens."
+      : "Read the total kWh at about the same time each day.");
+    document.getElementById("set-meter").value = state.meterType;
+  }
+
+  function renderAll() {
+    var rate = costPerUnit();
+    var m = measuredDaily();
+    var estDaily = state.appliances.reduce(function (s, a) { return s + applianceDaily(a); }, 0);
+    document.getElementById("example-notice").hidden = !state.isExample;
+    renderSummary(rate, m, estDaily);
+    renderLedger(rate, m);
+    renderRecs(rate);
+    renderAppliances(rate);
+    renderEntries("tk-list", state.tokens, function (t) {
+      return fmtDate(t.date) + " · " + fmtKES(t.amount) + " · " + fmtNum(t.units, 1) + " kWh · " + fmtNum(t.amount / t.units, 2) + "/kWh";
+    }, "No token purchases yet.", "tokens");
+    renderEntries("rd-list", state.readings, function (r) {
+      return fmtDate(r.date) + " · " + fmtNum(r.value, 1) + " kWh" + (state.meterType === "prepaid" ? " left" : "");
+    }, "No meter readings yet.", "readings");
+    renderReadingLabels();
+  }
+
+  function commit() { persist(); renderAll(); }
+
+  /* ---------- forms ---------- */
+  function flash(id, text, isErr) {
+    var m = document.getElementById(id);
+    m.textContent = text; m.classList.toggle("err", !!isErr);
+    setTimeout(function () { if (m.textContent === text) m.textContent = ""; }, 3500);
+  }
+  function addTo(key, item) {
+    var patch = {}; patch[key] = state[key].concat([item]);
+    state = Object.assign(clone(state), patch);
+  }
+
+  function initForms() {
+    var preset = document.getElementById("ap-preset");
+    preset.appendChild(new Option("Choose to fill in name and watts", ""));
+    PRESETS.forEach(function (p, i) { preset.appendChild(new Option(p[0] + " (" + p[1] + " W)", String(i))); });
+    preset.addEventListener("change", function () {
+      var p = PRESETS[Number(preset.value)];
+      if (!p) return;
+      document.getElementById("ap-name").value = p[0];
+      document.getElementById("ap-watts").value = p[1];
+      document.getElementById("ap-hours").focus();
+    });
+
+    document.getElementById("ap-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var name = document.getElementById("ap-name").value.trim().slice(0, 40);
+      var w = num(document.getElementById("ap-watts").value, 1, 20000);
+      var q = num(document.getElementById("ap-qty").value, 1, 50);
+      var h = num(document.getElementById("ap-hours").value, 0, 24);
+      var d = num(document.getElementById("ap-days").value, 1, 7);
+      if (!name || w === null || q === null || h === null || d === null) { flash("ap-msg", "Fill in every field with a number.", true); return; }
+      addTo("appliances", { id: uid(), name: name, watts: w, qty: q, hours: h, days: d });
+      e.target.reset(); document.getElementById("ap-qty").value = 1; document.getElementById("ap-days").value = 7;
+      commit(); flash("ap-msg", "Added " + name + ".");
+    });
+
+    document.getElementById("tk-read").addEventListener("click", function () {
+      var sms = document.getElementById("tk-sms").value;
+      var units = sms.match(/(?:units?|kwh)\s*[:=]?\s*([\d,]+(?:\.\d+)?)/i) || sms.match(/([\d,]+(?:\.\d+)?)\s*(?:kwh|units)/i);
+      var amt = sms.match(/(?:amt|amount|ksh\.?|kes|paid)\s*[:=]?\s*([\d,]+(?:\.\d+)?)/i);
+      var date = sms.match(/(\d{4})-(\d{2})-(\d{2})/) || sms.match(/(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/);
+      var found = [];
+      if (units) { document.getElementById("tk-units").value = units[1].replace(/,/g, ""); found.push("units"); }
+      if (amt) { document.getElementById("tk-amount").value = amt[1].replace(/,/g, ""); found.push("amount"); }
+      if (date) {
+        var iso;
+        if (date[0].indexOf("-") === 4) iso = date[1] + "-" + date[2] + "-" + date[3];
+        else { var y = date[3].length === 2 ? "20" + date[3] : date[3]; iso = y + "-" + date[2].padStart(2, "0") + "-" + date[1].padStart(2, "0"); }
+        if (/^\d{4}-\d{2}-\d{2}$/.test(iso) && !isNaN(parseDay(iso))) { document.getElementById("tk-date").value = iso; found.push("date"); }
+      }
+      if (found.length) flash("tk-msg", "Found " + found.join(", ") + ". Check the numbers, then add.");
+      else flash("tk-msg", "No units or amount found in that message. Type them in.", true);
+    });
+
+    document.getElementById("tk-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var date = document.getElementById("tk-date").value;
+      var am = num(document.getElementById("tk-amount").value, 0.01, 1e7);
+      var u = num(document.getElementById("tk-units").value, 0.01, 1e6);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || am === null || u === null) { flash("tk-msg", "Enter the date, amount and units.", true); return; }
+      addTo("tokens", { id: uid(), date: date, amount: am, units: u });
+      e.target.reset(); document.getElementById("tk-date").value = todayISO();
+      commit(); flash("tk-msg", "Purchase added.");
+    });
+
+    document.getElementById("rd-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var date = document.getElementById("rd-date").value;
+      var v = num(document.getElementById("rd-value").value, 0, 1e8);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || v === null) { flash("rd-msg", "Enter the date and the number on your meter.", true); return; }
+      state = Object.assign(clone(state), {
+        readings: state.readings.filter(function (r) { return r.date !== date; }).concat([{ id: uid(), date: date, value: v }])
+      });
+      e.target.reset(); document.getElementById("rd-date").value = todayISO();
+      commit(); flash("rd-msg", "Reading saved.");
+    });
+
+    document.getElementById("set-meter").addEventListener("change", function (e) {
+      state = Object.assign(clone(state), { meterType: e.target.value === "postpaid" ? "postpaid" : "prepaid" });
+      commit();
+    });
+
+    document.getElementById("start-own").addEventListener("click", function () {
+      state = emptyState(); commit(); selectTab("tab-appliances");
+      document.getElementById("ap-preset").focus();
+    });
+
+    function showConfirm(on) { document.getElementById("clear-row").hidden = on; document.getElementById("clear-confirm").hidden = !on; }
+    document.getElementById("clear-btn").addEventListener("click", function () { showConfirm(true); });
+    document.getElementById("clear-no").addEventListener("click", function () { showConfirm(false); });
+    document.getElementById("clear-yes").addEventListener("click", function () { state = emptyState(); commit(); showConfirm(false); });
+
+    document.getElementById("tk-date").value = todayISO();
+    document.getElementById("rd-date").value = todayISO();
+  }
+
+  function selectTab(id) {
+    document.querySelectorAll(".tab").forEach(function (t) {
+      var on = t.id === id;
+      t.setAttribute("aria-selected", on ? "true" : "false");
+      document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
+    });
+  }
+  document.querySelectorAll(".tab").forEach(function (t) { t.addEventListener("click", function () { selectTab(t.id); }); });
+
+  var saved = loadLocal();
+  state = saved ? normalize(saved) : exampleState();
+  initForms();
+  renderAll();
+  initCloud();
+})();
+</script>
